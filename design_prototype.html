@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>医管家小程序 - UI 原型设计</title>
+    <style>
+        :root {
+            --primary-color: #007AFF; /* Medical Blue */
+            --primary-light: #E5F1FF;
+            --success-color: #30D158; /* Mint/Grass Green */
+            --alert-color: #FF453A;
+            --text-main: #1C1C1E;
+            --text-sub: #8E8E93;
+            --bg-body: #F2F2F7;
+            --bg-card: #FFFFFF;
+            --radius-card: 16px;
+            --radius-btn: 12px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", sans-serif;
+            background-color: #Eef2f6;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: var(--text-main);
+        }
+
+        /* 布局容器 */
+        .workspace {
+            display: flex;
+            width: 90vw;
+            max-width: 1400px;
+            height: 90vh;
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        /* 左侧手机模拟器 */
+        .preview-area {
+            flex: 0 0 420px; /* 固定宽度 */
+            background: #F8F9FA;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-right: 1px solid #eee;
+            position: relative;
+        }
+
+        .phone-frame {
+            width: 375px;
+            height: 812px; /* iPhone X/11/12 size */
+            background: var(--bg-body);
+            border-radius: 40px;
+            box-shadow: 0 0 0 12px #333, 0 20px 50px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.9); /* 稍微缩小以适应屏幕 */
+        }
+
+        /* 手机刘海 */
+        .notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 30px;
+            background: #333;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+            z-index: 100;
+        }
+
+        /* 状态栏 */
+        .status-bar {
+            height: 44px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #000;
+            padding-top: 10px;
+        }
+
+        /* APP 内容区 */
+        .app-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 90px; /* 留出 TabBar 空间 */
+        }
+
+        .app-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* 顶部 Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #ddd url('https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=100&h=100') center/cover;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .greeting h1 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .greeting p {
+            font-size: 12px;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .notification-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .notification-btn::after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 8px;
+            height: 8px;
+            background: var(--alert-color);
+            border-radius: 50%;
+            border: 1px solid #fff;
+        }
+
+        /* 抢号提醒卡片 (PRD 3.2 & 201) */
+        .reminder-card {
+            background: linear-gradient(135deg, #007AFF 0%, #00C6FF 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 20px rgba(0, 122, 255, 0.25);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .reminder-card::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 100px;
+            height: 100px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+
+        .reminder-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .reminder-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .reminder-info h2 {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .reminder-info p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .countdown {
+            text-align: right;
+        }
+
+        .timer {
+            font-size: 24px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .timer-label {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        /* 快捷功能 Grid (PRD 5. Dashboard) */
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title span.more {
+            font-size: 13px;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .grid-menu {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .menu-item:active {
+            transform: scale(0.95);
+        }
+
+        .icon-box {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .ai-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #000;
+            color: #fff;
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-weight: bold;
+            border: 2px solid #fff;
+        }
+
+        .menu-item span {
+            font-size: 12px;
+            color: var(--text-main);
+        }
+
+        /* 今日用药 (PRD 3.1) */
+        .med-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .med-card {
+            background: #fff;
+            padding: 16px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .med-card.checked {
+            background: #f0fff4;
+            border-color: #dcfce7;
+        }
+
+        .med-card.checked .med-info h3,
+        .med-card.checked .med-info p {
+            color: #888;
+            text-decoration: line-through;
+        }
+
+        .med-left {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .med-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-light);
+            color: var(--primary-color);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+        }
+
+        .med-info h3 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .med-info p {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .check-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .med-card.checked .check-btn {
+            background: var(--success-color);
+            border-color: var(--success-color);
+            color: #fff;
+        }
+
+        /* 底部导航 */
+        .tab-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: 20px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #C7C7CC;
+            cursor: pointer;
+        }
+
+        .tab-item.active {
+            color: var(--primary-color);
+        }
+
+        .tab-item i {
+            font-size: 20px;
+        }
+
+        .tab-item span {
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .add-btn {
+            width: 48px;
+            height: 48px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .add-btn:active {
+            transform: scale(0.9);
+        }
+
+        /* 右侧设计规范 */
+        .specs-area {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .specs-header {
+            margin-bottom: 40px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+        }
+
+        .specs-header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .specs-header .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--primary-light);
+            color: var(--primary-color);
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .spec-section {
+            margin-bottom: 40px;
+        }
+
+        .spec-title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-sub);
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 20px;
+        }
+
+        .color-swatch {
+            width: 80px;
+        }
+
+        .color-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-bottom: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .color-info strong {
+            display: block;
+            font-size: 14px;
+        }
+        .color-info span {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .annotation-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .note-card {
+            background: #F8F9FA;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .note-card h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .note-card p {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        /* Toast 模拟 */
+        .toast {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="workspace">
+        <!-- 左侧：UI 预览 -->
+        <div class="preview-area">
+            <div class="phone-frame">
+                <div class="notch"></div>
+                
+                <!-- 状态栏 -->
+                <div class="status-bar">
+                    <span>9:41</span>
+                    <i class="fas fa-battery-full"></i>
+                </div>
+
+                <!-- 应用内容 -->
+                <div class="app-content">
+                    <!-- 头部 -->
+                    <div class="header">
+                        <div class="user-info" onclick="toggleFamily()">
+                            <div class="avatar"></div>
+                            <div class="greeting">
+                                <h1>早安，张爷爷</h1>
+                                <p>当前管理: 我自己 <i class="fas fa-chevron-down"></i></p>
+                            </div>
+                        </div>
+                        <div class="notification-btn">
+                            <i class="far fa-bell"></i>
+                        </div>
+                    </div>
+
+                    <!-- 抢号提醒 (PRD 3.2) -->
+                    <div class="reminder-card" onclick="showToast('跳转至挂号详情页')">
+                        <div class="reminder-header">
+                            <span><i class="fas fa-clock"></i> 抢号提醒</span>
+                            <span>今天</span>
+                        </div>
+                        <div class="reminder-content">
+                            <div class="reminder-info">
+                                <h2>协和医院 - 皮肤科</h2>
+                                <p>专家号 / 周三上午</p>
+                            </div>
+                            <div class="countdown">
+                                <div class="timer">00:28:45</div>
+                                <div class="timer-label">后开始抢号</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 快捷入口 (PRD 5 / IA) -->
+                    <div class="section-title">
+                        快捷服务
+                    </div>
+                    <div class="grid-menu">
+                        <div class="menu-item" onclick="showToast('启动 OCR 相机扫描药品')">
+                            <div class="icon-box" style="color: #007AFF; background: #E5F1FF;">
+                                <i class="fas fa-capsules"></i>
+                            </div>
+                            <span>拍药盒</span>
+                        </div>
+                        <div class="menu-item" onclick="showToast('启动相机拍摄检查报告')">
+                            <div class="icon-box" style="color: #30D158; background: #E8FCEF;">
+                                <i class="fas fa-file-medical-alt"></i>
+                                <span class="ai-badge">AI</span>
+                            </div>
+                            <span>解报告</span>
+                        </div>
+                        <div class="menu-item" onclick="showToast('拍摄发票进行记账')">
+                            <div class="icon-box" style="color: #FF9500; background: #FFF5E5;">
+                                <i class="fas fa-receipt"></i>
+                            </div>
+                            <span>记费用</span>
+                        </div>
+                        <div class="menu-item" onclick="showToast('打开历史病历夹')">
+                            <div class="icon-box" style="color: #AF52DE; background: #F7E5FF;">
+                                <i class="fas fa-folder-open"></i>
+                            </div>
+                            <span>病历夹</span>
+                        </div>
+                    </div>
+
+                    <!-- 今日任务 (PRD 3.1) -->
+                    <div class="section-title">
+                        <span>今日用药</span>
+                        <span class="more">全部 3 <i class="fas fa-chevron-right"></i></span>
+                    </div>
+                    <div class="med-list">
+                        <!-- 任务 1 -->
+                        <div class="med-card" id="med1">
+                            <div class="med-left">
+                                <div class="med-icon">
+                                    <i class="fas fa-pills"></i>
+                                </div>
+                                <div class="med-info">
+                                    <h3>阿莫西林胶囊</h3>
+                                    <p>0.5g x 2粒 · 饭后服用</p>
+                                </div>
+                            </div>
+                            <div class="check-btn" onclick="toggleCheck('med1')">
+                                <i class="fas fa-check"></i>
+                            </div>
+                        </div>
+                        <!-- 任务 2 -->
+                        <div class="med-card" id="med2">
+                            <div class="med-left">
+                                <div class="med-icon">
+                                    <i class="fas fa-tablets"></i>
+                                </div>
+                                <div class="med-info">
+                                    <h3>降压药 (厄贝沙坦)</h3>
+                                    <p>1粒 · 早餐前</p>
+                                </div>
+                            </div>
+                            <div class="check-btn" onclick="toggleCheck('med2')">
+                                <i class="fas fa-check"></i>
+                            </div>
+                        </div>
+                         <!-- 任务 3 (已完成) -->
+                         <div class="med-card checked" id="med3">
+                            <div class="med-left">
+                                <div class="med-icon">
+                                    <i class="fas fa-prescription-bottle"></i>
+                                </div>
+                                <div class="med-info">
+                                    <h3>维生素 C</h3>
+                                    <p>1片 · 随餐</p>
+                                </div>
+                            </div>
+                            <div class="check-btn" onclick="toggleCheck('med3')">
+                                <i class="fas fa-check"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="height: 20px;"></div>
+                </div>
+
+                <!-- Toast -->
+                <div id="toast" class="toast">提示信息</div>
+
+                <!-- 底部 TabBar -->
+                <div class="tab-bar">
+                    <div class="tab-item active">
+                        <i class="fas fa-home"></i>
+                        <span>首页</span>
+                    </div>
+                    <div class="tab-item">
+                        <i class="fas fa-file-medical"></i>
+                        <span>档案</span>
+                    </div>
+                    <div class="add-btn" onclick="showToast('快速添加记录')">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="tab-item">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>统计</span>
+                    </div>
+                    <div class="tab-item">
+                        <i class="fas fa-user"></i>
+                        <span>我的</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：设计规范与说明 -->
+        <div class="specs-area">
+            <div class="specs-header">
+                <span class="badge">V1.0 原型</span>
+                <h1>医管家 (Medical Manager)</h1>
+                <p>基于 PRD 文档的高保真交互设计稿</p>
+            </div>
+
+            <!-- 颜色规范 -->
+            <div class="spec-section">
+                <div class="spec-title">1. Color System (配色体系)</div>
+                <div class="color-palette">
+                    <div class="color-swatch">
+                        <div class="color-circle" style="background: #007AFF;"></div>
+                        <div class="color-info">
+                            <strong>Medical Blue</strong>
+                            <span>#007AFF</span>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-circle" style="background: #30D158;"></div>
+                        <div class="color-info">
+                            <strong>Success</strong>
+                            <span>#30D158</span>
+                        </div>
+                    </div>
+                    <div class="color-swatch">
+                        <div class="color-circle" style="background: #FF453A;"></div>
+                        <div class="color-info">
+                            <strong>Alert</strong>
+                            <span>#FF453A</span>
+                        </div>
+                    </div>
+                     <div class="color-swatch">
+                        <div class="color-circle" style="background: #F2F2F7; border: 1px solid #ddd;"></div>
+                        <div class="color-info">
+                            <strong>Background</strong>
+                            <span>#F2F2F7</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 设计注解 -->
+            <div class="spec-section">
+                <div class="spec-title">2. UX Logic & Features (交互逻辑)</div>
+                <div class="annotation-list">
+                    <div class="note-card">
+                        <h3><i class="fas fa-user-friends"></i> 家庭账户切换 (PRD 3.6)</h3>
+                        <p>顶部设计了明确的家庭成员切换器。针对老年用户（张爷爷），文案显示更亲切，且默认展示“长辈模式”的大字号布局（PRD 7.3）。</p>
+                    </div>
+                    <div class="note-card">
+                        <h3><i class="fas fa-stopwatch"></i> 抢号强提醒 (PRD 3.2)</h3>
+                        <p>采用高饱和度渐变色卡片置顶，利用视觉重心强调紧迫感。倒计时动态展示，解决用户“忘记时间”的痛点。</p>
+                    </div>
+                    <div class="note-card">
+                        <h3><i class="fas fa-magic"></i> AI & OCR 入口 (PRD 3.4/7.2)</h3>
+                        <p>“解报告”图标右上角增加 "AI" 标签，强调核心差异化功能。所有录入入口（OCR、AI）集中在 Grid 区域，一键直达，减少层级。</p>
+                    </div>
+                    <div class="note-card">
+                        <h3><i class="fas fa-check-circle"></i> 用药打卡反馈 (PRD 3.1)</h3>
+                        <p>卡片式列表，左侧展示药品详情，右侧大尺寸打卡按钮（48dp+ 热区）。点击后整行变绿并划掉文字，提供明确的“完成感”视觉反馈。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 字体排版 -->
+            <div class="spec-section">
+                <div class="spec-title">3. Typography (排版规范)</div>
+                <div style="font-size: 14px; color: #666; line-height: 1.8;">
+                    <p style="font-size: 24px; color: #000; font-weight: 700;">Headline 1 - 24px (重要数字/标题)</p>
+                    <p style="font-size: 18px; color: #000; font-weight: 600;">Headline 2 - 18px (模块标题)</p>
+                    <p style="font-size: 16px; color: #333;">Body Text - 16px (正文内容，适老化设计)</p>
+                    <p style="font-size: 12px; color: #8E8E93;">Caption - 12px (辅助说明)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 用药打卡交互
+        function toggleCheck(id) {
+            const card = document.getElementById(id);
+            const isChecked = card.classList.contains('checked');
+            
+            if (!isChecked) {
+                card.classList.add('checked');
+                showToast('已完成服药打卡');
+            } else {
+                card.classList.remove('checked');
+            }
+        }
+
+        // 模拟 Toast 提示
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // 模拟家庭切换
+        function toggleFamily() {
+            showToast('切换家庭成员：张爷爷 (当前)');
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,50 @@
+{
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/files/index",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/stats/index",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/profile/index",
+			"style": {
+				"navigationStyle": "custom"
+			}
+		},
+		{ "path": "pages/meds/index", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/meds/add", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/meds/plan", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/booking/index", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/booking/new", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/files/new", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/files/edit", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/files/detail", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/reports/index", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/reports/new", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/reports/detail", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/billing/index", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/billing/new", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/billing/detail", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/profile/edit", "style": { "navigationStyle": "custom" } },
+		{ "path": "pages/profile/family/manage", "style": { "navigationStyle": "custom" } }
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "医管家",
+		"navigationBarBackgroundColor": "#F2F2F7",
+		"backgroundColor": "#F2F2F7"
+	}
+}

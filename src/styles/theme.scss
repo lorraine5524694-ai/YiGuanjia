@@ -1,0 +1,17 @@
+// 全局主题变量与通用工具
+$primary-color: #007aff;
+$primary-light: #e5f1ff;
+$success-color: #30d158;
+$alert-color: #ff453a;
+$warning-color: #ff9500;
+$text-main: #1c1c1e;
+$text-sub: #8e8e93;
+$bg-body: #f2f2f7;
+$bg-card: #ffffff;
+
+@mixin safe-area-padding($property, $value) {
+  #{$property}: $value;
+  #{$property}: calc(#{$value} + constant(safe-area-inset-bottom));
+  #{$property}: calc(#{$value} + env(safe-area-inset-bottom));
+}
+
