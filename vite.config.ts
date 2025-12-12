@@ -9,6 +9,13 @@ export default defineConfig({
     port: 5175,
     hmr: {
       clientPort: 5175
+    },
+    proxy: {
+      '/deepseek': {
+        target: 'https://api.deepseek.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/deepseek/, '')
+      }
     }
   }
 })

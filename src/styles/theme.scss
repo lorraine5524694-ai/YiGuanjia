@@ -1,13 +1,50 @@
 // 全局主题变量与通用工具
-$primary-color: #007aff;
-$primary-light: #e5f1ff;
-$success-color: #30d158;
-$alert-color: #ff453a;
-$warning-color: #ff9500;
-$text-main: #1c1c1e;
-$text-sub: #8e8e93;
-$bg-body: #f2f2f7;
+// 全局主题变量与通用工具
+$primary-color: #007AFF; // System Blue
+$primary-light: #E5F1FF;
+$secondary-color: #5856D6; // Indigo
+$accent-color: #FF9500; // Orange
+$success-color: #34C759;
+$alert-color: #FF3B30;
+$warning-color: #FFCC00;
+$text-main: #2C3E50; // Darker Blue-Grey
+$text-sub: #95A5A6;
+$bg-body: #F4F6F8; // Soft Gray
 $bg-card: #ffffff;
+$bg-gradient-primary: linear-gradient(135deg, #007AFF 0%, #0056B3 100%);
+
+// 排版系统 (Typography)
+$font-size-xs: 20rpx;
+$font-size-sm: 24rpx;
+$font-size-base: 28rpx;
+$font-size-lg: 32rpx;
+$font-size-xl: 36rpx;
+$font-size-xxl: 48rpx;
+
+$font-weight-regular: 400;
+$font-weight-medium: 500;
+$font-weight-bold: 700;
+$font-weight-heavy: 800;
+
+// 间距系统 (Spacing)
+$spacing-xs: 8rpx;
+$spacing-sm: 16rpx;
+$spacing-base: 24rpx;
+$spacing-lg: 32rpx;
+$spacing-xl: 40rpx;
+$spacing-xxl: 48rpx;
+
+// 圆角系统 (Radius)
+$radius-sm: 12rpx;
+$radius-base: 20rpx;
+$radius-lg: 28rpx;
+$radius-xl: 40rpx;
+$radius-circle: 999rpx;
+
+// 阴影系统 (Shadows)
+$shadow-sm: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+$shadow-base: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
+$shadow-lg: 0 16rpx 40rpx rgba(0, 0, 0, 0.12);
 
 @mixin safe-area-padding($property, $value) {
   #{$property}: $value;
@@ -15,3 +52,20 @@ $bg-card: #ffffff;
   #{$property}: calc(#{$value} + env(safe-area-inset-bottom));
 }
 
+@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin flex-between-center {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+@mixin text-ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

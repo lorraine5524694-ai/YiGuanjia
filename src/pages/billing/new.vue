@@ -1,8 +1,13 @@
 <template>
   <view class="container">
     <TopSafeArea />
-  <view class="header">
-      <text class="h1">记一笔</text>
+    <view class="header">
+      <view class="header-left">
+        <view class="back-btn" @click="goBack">
+          <view class="icon-back"></view>
+        </view>
+        <text class="h1">记一笔</text>
+      </view>
     </view>
     <scroll-view scroll-y class="scroll-content">
       <view class="section-card clickable" @click="pickImage">
@@ -124,11 +129,18 @@ const saveAndOpen = () => {
   uni.setStorageSync('currentBillItems', items.value);
   uni.navigateTo({ url: '/pages/billing/detail' });
 };
+
+const goBack = () => {
+  uni.navigateBack();
+};
 </script>
 
 <style lang="scss">
 .container { display: flex; flex-direction: column; height: 100vh; background-color: $bg-body; font-family: -apple-system, BlinkMacSystemFont, "San Francisco", Helvetica, Arial, sans-serif; overflow: hidden; }
 .header { padding: 20rpx 32rpx; background: $bg-body; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
+.header-left { display: flex; align-items: center; gap: 8rpx; }
+.back-btn { width: 64rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; margin-left: -16rpx; }
+.icon-back { width: 40rpx; height: 40rpx; background-color: $text-main; mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0xNSAxOGwtNi02IDYtNiIvPjwvc3ZnPg=="); -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0xNSAxOGwtNi02IDYtNiIvPjwvc3ZnPg=="); mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center; }
 .h1 { font-size: 40rpx; font-weight: 700; color: $text-main; }
 .actions { display: flex; gap: 12rpx; }
 .chip { padding: 8rpx 16rpx; border-radius: 999rpx; background: #fff; font-size: 24rpx; color: $text-main; }

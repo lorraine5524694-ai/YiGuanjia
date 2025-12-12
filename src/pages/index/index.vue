@@ -4,85 +4,22 @@
     <TopSafeArea />
     
     <!-- 头部 -->
-    <view class="header">
-      <view class="user-info" @click="toggleFamily">
-        <image class="avatar" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=100&h=100" mode="aspectFill"></image>
-        <view class="greeting">
-          <text class="h1">早安，张爷爷</text>
-          <view class="sub-text">
-            <text>当前管理: 我自己</text>
-            <view class="arrow-down"></view>
-          </view>
-        </view>
-      </view>
-      <view class="notification-btn">
-        <!-- 铃铛图标 -->
-        <view class="icon-bell icon-bg"></view>
-        <view class="dot"></view>
-      </view>
-    </view>
+    <AppHeader 
+      :current-member="currentMember" 
+      :reminders="reminderList"
+      @toggle-family="toggleFamily"
+      @click-notification="handleNotificationClick"
+    />
 
     <scroll-view scroll-y class="scroll-content">
       <!-- 抢号提醒卡片 -->
-      <view class="reminder-card" :class="{ active: countdownState === 'upcoming', running: countdownState === 'running' }" @click="goBookingNew">
-        <view class="card-bg-decoration"></view>
-        <view class="reminder-header">
-          <view class="flex-center">
-            <view class="icon-small-white icon-bg-clock"></view>
-            <text class="ml-4">抢号提醒</text>
-          </view>
-          <text>{{ isToday ? '今天' : nextDayLabel }}</text>
-        </view>
-        <view class="reminder-content">
-          <view class="reminder-info">
-            <text class="h2">{{ bookingTask.hospital }} - {{ bookingTask.department }}</text>
-            <text class="p-white">{{ bookingTask.tag }}</text>
-          </view>
-          <view class="countdown">
-            <text class="timer">{{ countdownText }}</text>
-            <text class="timer-label">{{ countdownState === 'upcoming' ? '后开始抢号' : '开抢中' }}</text>
-          </view>
-        </view>
-        <view class="remind-strategy">
-          <view class="chip" :class="{ on: strategies.preDay }" @click.stop="toggleStrategy('preDay')">前1天</view>
-          <view class="chip" :class="{ on: strategies.pre30 }" @click.stop="toggleStrategy('pre30')">前30分钟</view>
-          <view class="chip" :class="{ on: strategies.pre5 }" @click.stop="toggleStrategy('pre5')">前5分钟</view>
-          <view v-if="bookingTask.link" class="chip link" @click.stop="copyLink">复制链接</view>
-          <view v-if="countdownState==='running'" class="chip cta" @click.stop="goToLink">去抢号</view>
-        </view>
-      </view>
+      <BookingCard 
+        :task="bookingTask" 
+        @click="goBookingNew"
+      />
 
       <!-- 快捷服务 Grid -->
-      <view class="section-title">
-        <text class="title-text">快捷服务</text>
-      </view>
-      <view class="grid-menu">
-        <view class="menu-item" @click="goMedsAdd">
-          <view class="icon-box box-blue">
-            <view class="menu-icon icon-bg-pill"></view>
-          </view>
-          <text class="menu-text">拍药盒</text>
-        </view>
-        <view class="menu-item" @click="goReportsNew">
-          <view class="icon-box box-green">
-            <view class="ai-badge">AI</view>
-            <view class="menu-icon icon-bg-report"></view>
-          </view>
-          <text class="menu-text">解报告</text>
-        </view>
-        <view class="menu-item" @click="goBillingNew">
-          <view class="icon-box box-orange">
-            <view class="menu-icon icon-bg-bill"></view>
-          </view>
-          <text class="menu-text">记费用</text>
-        </view>
-        <view class="menu-item" @click="goFilesClinic">
-          <view class="icon-box box-purple">
-            <view class="menu-icon icon-bg-folder"></view>
-          </view>
-          <text class="menu-text">病历夹</text>
-        </view>
-      </view>
+      <ServiceGrid @navigate="handleGridNavigate" />
 
       <!-- 今日用药 -->
       <view class="section-title">
@@ -104,28 +41,18 @@
         </view>
       </view>
 
-      <view class="med-list">
-        <view 
+      <view class="med-list" v-if="medList.length > 0">
+        <MedCard 
           v-for="(item, index) in medList" 
           :key="index" 
-          class="med-card" 
-          :class="['slot-' + (item.slot || 'morning'), { checked: item.checked }]"
-        >
-          <view class="med-left">
-            <view class="med-icon-bg">
-              <!-- 药图标 -->
-              <view class="med-icon icon-bg-med"></view>
-            </view>
-            <view class="med-info">
-              <text class="med-name">{{ item.name }}</text>
-              <text class="med-desc">{{ item.desc }}</text>
-            </view>
-          </view>
-          <view class="check-btn" @click="toggleCheck(index)">
-            <view v-if="item.checked" class="check-icon icon-bg-check"></view>
-            <view v-else class="check-icon-placeholder icon-bg-check-gray"></view>
-          </view>
-        </view>
+          :item="item" 
+          @check="toggleCheck(index)"
+        />
+      </view>
+      <view class="empty-state" v-else>
+        <view class="empty-icon icon-bg-empty"></view>
+        <text class="empty-text">当前时段暂无用药计划</text>
+        <view class="add-btn-small" @click="goMedsIndex">去添加</view>
       </view>
       
       <!-- 底部安全区垫高 -->
@@ -138,9 +65,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import CustomTabBar from '@/components/CustomTabBar.vue';
 import TopSafeArea from '@/components/TopSafeArea.vue';
+import AppHeader from '@/components/AppHeader.vue';
+import BookingCard from '@/components/BookingCard.vue';
+import ServiceGrid from '@/components/ServiceGrid.vue';
+import MedCard from '@/components/MedCard.vue';
+
+const currentMember = ref('我自己');
 
 const timeTabs = [
   { key: 'all', label: '全部' },
@@ -160,8 +93,10 @@ const medList = computed(() => {
 });
 
 const toggleCheck = (index) => {
-  medList.value[index].checked = !medList.value[index].checked;
-  if (medList.value[index].checked) {
+  // Find the item in the original list based on the filtered list item
+  const item = medList.value[index];
+  item.checked = !item.checked;
+  if (item.checked) {
     uni.showToast({ title: '已完成服药打卡', icon: 'success' });
   }
 };
@@ -174,7 +109,9 @@ const toggleFamily = () => {
   uni.showActionSheet({
     itemList: ['我自己', '张爷爷', '李奶奶'],
     success: (res) => {
-      showToast('切换至: ' + ['我自己', '张爷爷', '李奶奶'][res.tapIndex]);
+      const members = ['我自己', '张爷爷', '李奶奶'];
+      currentMember.value = members[res.tapIndex];
+      showToast('切换至: ' + currentMember.value);
     }
   });
 };
@@ -182,21 +119,20 @@ const toggleFamily = () => {
 const goMedsIndex = () => {
   uni.navigateTo({ url: '/pages/meds/index' });
 };
-const goFilesClinic = () => {
-  const tab = encodeURIComponent('门诊病历');
-  uni.navigateTo({ url: `/pages/files/index?tab=${tab}` });
-};
-const goMedsAdd = () => {
-  uni.navigateTo({ url: '/pages/meds/add' });
-};
-const goReportsNew = () => {
-  uni.navigateTo({ url: '/pages/reports/new' });
-};
-const goBillingNew = () => {
-  uni.navigateTo({ url: '/pages/billing/new' });
-};
 const goBookingNew = () => {
   uni.navigateTo({ url: '/pages/booking/index' });
+};
+
+const handleGridNavigate = (key) => {
+  const routes = {
+    medsAdd: '/pages/meds/add',
+    reportsNew: '/pages/reports/new',
+    billingNew: '/pages/billing/new',
+    filesClinic: '/pages/files/index?tab=' + encodeURIComponent('门诊病历')
+  };
+  if (routes[key]) {
+    uni.navigateTo({ url: routes[key] });
+  }
 };
 
 const nowMs = () => new Date().getTime();
@@ -208,53 +144,35 @@ const bookingTask = ref({
   openTime: inThirtyMinutes(),
   link: 'https://www.hospital.example.com/booking'
 });
-const strategies = ref({ preDay: true, pre30: true, pre5: true });
-const toggleStrategy = (k) => {
-  strategies.value[k] = !strategies.value[k];
-  uni.showToast({ title: `${strategies.value[k] ? '已开启' : '已关闭'}: ${k==='preDay'?'前1天':k==='pre30'?'前30分钟':'前5分钟'}`, icon: 'none' });
-};
-const copyLink = () => {
-  if (!bookingTask.value.link) return;
-  uni.setClipboardData({ data: bookingTask.value.link, success: () => uni.showToast({ title: '链接已复制', icon: 'success' }) });
-};
-const goToLink = () => {
-  if (!bookingTask.value.link) return;
-  if (typeof window !== 'undefined') {
-    window.open(bookingTask.value.link, '_blank');
+
+const reminderList = computed(() => {
+  const list = [];
+  
+  // 1. Booking Task Reminder
+  if (bookingTask.value && bookingTask.value.openTime > nowMs()) {
+    list.push(`预约提醒: ${bookingTask.value.hospital} ${bookingTask.value.department}`);
   }
-};
-const isToday = computed(() => {
-  const t = new Date(bookingTask.value.openTime);
-  const n = new Date();
-  return t.getFullYear() === n.getFullYear() && t.getMonth() === n.getMonth() && t.getDate() === n.getDate();
+
+  // 2. Medication Reminders (Unchecked)
+  medListAll.value.forEach(med => {
+    if (!med.checked) {
+       list.push(`用药提醒: ${med.name} (${med.desc})`);
+    }
+  });
+
+  return list;
 });
-const nextDayLabel = computed(() => {
-  const t = new Date(bookingTask.value.openTime);
-  const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
-  return `${t.getMonth()+1}月${t.getDate()}日 · ${weekdays[t.getDay()]}`;
-});
-const remainingMs = ref(bookingTask.value.openTime - nowMs());
-const countdownState = computed(() => (remainingMs.value > 0 ? 'upcoming' : 'running'));
-const pad2 = (n) => (n < 10 ? '0' + n : '' + n);
-const msToText = (ms) => {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const hh = Math.floor(s / 3600);
-  const mm = Math.floor((s % 3600) / 60);
-  const ss = s % 60;
-  return `${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`;
+
+const handleNotificationClick = () => {
+  uni.navigateTo({ url: '/pages/notifications/index' });
 };
-const countdownText = computed(() => (countdownState.value === 'upcoming' ? msToText(remainingMs.value) : '00:00:00'));
-let timer;
+
 onMounted(() => {
-  timer = setInterval(() => {
-    remainingMs.value = bookingTask.value.openTime - nowMs();
-  }, 1000);
   const h = new Date().getHours();
   if (h >= 5 && h < 11) selectedTab.value = 'morning';
   else if (h >= 11 && h < 15) selectedTab.value = 'noon';
   else selectedTab.value = 'evening';
 });
-onUnmounted(() => { if (timer) clearInterval(timer); });
 </script>
 
 <style lang="scss">
@@ -269,234 +187,27 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
   overflow: hidden;
 }
 
-.status-bar-placeholder {
-  height: var(--status-bar-height);
-  height: constant(safe-area-inset-top);
-  height: env(safe-area-inset-top);
-  width: 100%;
-  background-color: transparent;
-  flex-shrink: 0;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20rpx 32rpx;
-  margin-bottom: 10rpx;
-  flex-shrink: 0;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 24rpx;
-}
-
-.avatar {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 50%;
-  border: 4rpx solid #fff;
-  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.1);
-}
-
-.greeting {
-  display: flex;
-  flex-direction: column;
-  gap: 4rpx;
-}
-
-.h1 {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: $text-main;
-}
-
-.sub-text {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  font-size: 24rpx;
-  color: $text-sub;
-}
-
-.arrow-down {
-  width: 0; 
-  height: 0; 
-  border-left: 8rpx solid transparent;
-  border-right: 8rpx solid transparent;
-  border-top: 10rpx solid $text-sub;
-}
-
-.notification-btn {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 50%;
-  background: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.05);
-}
-
-.icon-bell {
-  width: 40rpx;
-  height: 40rpx;
-}
-
-/* 图标样式处理 */
-.icon-bg {
-    background-color: #333;
-    mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTggOEE2IDYgMCAwIDAgNiA4YzAgNy0zIDktMyA5aDE4cy0zLTItMy05Ii8+PHBhdGggZD0iTTEzLjczIDIxYTIgMiAwIDAgMS0zLjQ2IDAiLz48L3N2Zz4=");
-    -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTggOEE2IDYgMCAwIDAgNiA4YzAgNy0zIDktMyA5aDE4cy0zLTItMy05Ii8+PHBhdGggZD0iTTEzLjczIDIxYTIgMiAwIDAgMS0zLjQ2IDAiLz48L3N2Zz4=");
-    mask-size: contain;
-    -webkit-mask-size: contain;
-    mask-repeat: no-repeat;
-    -webkit-mask-repeat: no-repeat;
-    mask-position: center;
-    -webkit-mask-position: center;
-}
-
-.dot {
-  position: absolute;
-  top: 20rpx;
-  right: 20rpx;
-  width: 16rpx;
-  height: 16rpx;
-  background: $alert-color;
-  border-radius: 50%;
-  border: 2rpx solid #fff;
-}
-
 .scroll-content {
   flex: 1;
-  padding: 0 32rpx;
+  padding: 0 $spacing-lg;
   box-sizing: border-box;
   overflow-y: auto;
 }
 
-/* 抢号卡片 */
-.reminder-card {
-  background: linear-gradient(135deg, #007AFF 0%, #00C6FF 100%);
-  border-radius: 40rpx;
-  padding: 40rpx;
-  color: #fff;
-  margin-bottom: 48rpx;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 16rpx 40rpx rgba(0, 122, 255, 0.25);
-}
-
-.reminder-card.active { animation: pulseGlow 2s infinite; }
-.reminder-card.running { background: linear-gradient(135deg, #0a84ff 0%, #34c759 100%); box-shadow: 0 16rpx 40rpx rgba(52, 199, 89, 0.25); }
-
-@keyframes pulseGlow { 0% { box-shadow: 0 16rpx 40rpx rgba(0,122,255,0.25); } 50% { box-shadow: 0 24rpx 56rpx rgba(0,122,255,0.45); } 100% { box-shadow: 0 16rpx 40rpx rgba(0,122,255,0.25); } }
-
-.card-bg-decoration {
-  position: absolute;
-  top: -40rpx;
-  right: -40rpx;
-  width: 200rpx;
-  height: 200rpx;
-  background: rgba(255,255,255,0.1);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.reminder-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 24rpx;
-  opacity: 0.9;
-  margin-bottom: 16rpx;
-}
-
-.flex-center {
-  display: flex;
-  align-items: center;
-}
-
-.ml-4 {
-  margin-left: 8rpx;
-}
-
-.icon-small-white {
-  width: 28rpx;
-  height: 28rpx;
-}
-.icon-bg-clock {
-    background-color: #fff;
-    mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiLz48cG9seWxpbmUgcG9pbnRzPSIxMiA2IDEyIDEyIDE2IDE0Ii8+PC9zdmc+");
-    -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiLz48cG9seWxpbmUgcG9pbnRzPSIxMiA2IDEyIDEyIDE2IDE0Ii8+PC9zdmc+");
-    mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center;
-}
-
-.reminder-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-
-.reminder-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-}
-
-.h2 {
-  font-size: 40rpx;
-  font-weight: 700;
-}
-
-.p-white {
-  font-size: 26rpx;
-  opacity: 0.9;
-}
-
-.countdown {
-  text-align: right;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.timer {
-  font-size: 48rpx;
-  font-weight: 800;
-  font-feature-settings: "tnum";
-  font-variant-numeric: tabular-nums;
-}
-
-.remind-strategy { margin-top: 24rpx; display: flex; gap: 12rpx; }
-.chip { padding: 8rpx 16rpx; border-radius: 999rpx; background: rgba(255,255,255,0.18); color: #fff; font-size: 22rpx; }
-.chip.on { background: rgba(255,255,255,0.28); }
-.chip.link { background: rgba(0,0,0,0.25); }
-.chip.cta { background: #fff; color: #007aff; font-weight: 700; }
-
-.timer-label {
-  font-size: 22rpx;
-  opacity: 0.8;
-}
-
 /* 快捷菜单 */
 .section-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32rpx;
+  @include flex-between-center;
+  margin-bottom: $spacing-lg;
 }
 
 .title-text {
-  font-size: 36rpx;
-  font-weight: 700;
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
   color: $text-main;
 }
 
 .more-link {
-  font-size: 26rpx;
+  font-size: $font-size-sm;
   color: $primary-color;
   display: flex;
   align-items: center;
@@ -508,86 +219,10 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
   font-weight: bold;
 }
 
-.grid-menu {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 60rpx;
-}
-
-.menu-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16rpx;
-}
-
-.icon-box {
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: 32rpx;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  box-shadow: 0 8rpx 24rpx rgba(0,0,0,0.03);
-}
-
-.menu-icon {
-  width: 48rpx;
-  height: 48rpx;
-}
-.icon-bg-pill {
-    background-color: $primary-color;
-    mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PHJlY3QgeD0iMiIgeT0iNiIgd2lkdGg9IjIwIiBoZWlnaHQ9IjEyIiByeD0iNiIvPjxwYXRoIGQ9Ik0xMiA2djEyIi8+PC9zdmc+");
-    -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PHJlY3QgeD0iMiIgeT0iNiIgd2lkdGg9IjIwIiBoZWlnaHQ9IjEyIiByeD0iNiIvPjxwYXRoIGQ9Ik0xMiA2djEyIi8+PC9zdmc+");
-    mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center;
-}
-.icon-bg-report {
-    background-color: $success-color;
-    mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PHBhdGggZD0iTTE0IDJINmEyIDIgMCAwIDAtMiAyejE2YTIgMiAwIDAgMCAyIDJoMTJhMiAyIDAgMCAwIDItMlY4eiIvPjxwb2x5bGluZSBwb2ludHM9IjE0IDIgMTQgOCAyMCA4Ii8+PHBhdGggZD0iTTEyIDE4di02Ii8+PHBhdGggZD0iTTkgMTVoNiIvPjwvc3ZnPg==");
-    -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PHBhdGggZD0iTTE0IDJINmEyIDIgMCAwIDAtMiAyejE2YTIgMiAwIDAgMCAyIDJoMTJhMiAyIDAgMCAwIDItMlY4eiIvPjxwb2x5bGluZSBwb2ludHM9IjE0IDIgMTQgOCAyMCA4Ii8+PHBhdGggZD0iTTEyIDE4di02Ii8+PHBhdGggZD0iTTkgMTVoNiIvPjwvc3ZnPg==");
-    mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center;
-}
-.icon-bg-bill {
-    background-color: #FF9500;
-    mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PHBhdGggZD0iTTQgNHYxNmEyIDIgMCAwIDAgMiAyaDEyYTIgMiAwIDAgMCAyLTJWOC4zNDJhMiAyIDAgMCAwLS42MDItMS40M2wtNC40NC00LjM0MkEyIDIgMCAwIDAgMTMuNTYgMkg2YTIgMiAwIDAgMC0yIDJ6Ii8+PHBhdGggZD0iTTkgMTNoNiIvPjxwYXRoIGQ9Ik05IDE3aDYiLz48cGF0aCBkPSJNMTQgMnY2aDYiLz48L3N2Zz4=");
-    -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PHBhdGggZD0iTTQgNHYxNmEyIDIgMCAwIDAgMiAyaDEyYTIgMiAwIDAgMCAyLTJWOC4zNDJhMiAyIDAgMCAwLS42MDItMS40M2wtNC40NC00LjM0MkEyIDIgMCAwIDAgMTMuNTYgMkg2YTIgMiAwIDAgMC0yIDJ6Ii8+PHBhdGggZD0iTTkgMTNoNiIvPjxwYXRoIGQ9Ik05IDE3aDYiLz48cGF0aCBkPSJNMTQgMnY2aDYiLz48L3N2Zz4=");
-    mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center;
-}
-.icon-bg-folder {
-    background-color: #AF52DE;
-    mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PHBhdGggZD0iTTIyIDE5YTIgMiAwIDAgMS0yIDJINGEyIDIgMCAwIDEtMi0yVjVhMiAyIDAgMCAxIDItMmg1bDIgM2g5YTIgMiAwIDAgMSAyIDJ6Ii8+PC9zdmc+");
-    -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PHBhdGggZD0iTTIyIDE5YTIgMiAwIDAgMS0yIDJINGEyIDIgMCAwIDEtMi0yVjVhMiAyIDAgMCAxIDItMmg1bDIgM2g5YTIgMiAwIDAgMSAyIDJ6Ii8+PC9zdmc+");
-    mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center;
-}
-
-.menu-text {
-  font-size: 24rpx;
-  color: $text-main;
-}
-
-.box-blue { background: $primary-light; color: $primary-color; }
-.box-green { background: #E8FCEF; color: $success-color; }
-.box-orange { background: #FFF5E5; color: #FF9500; }
-.box-purple { background: #F7E5FF; color: #AF52DE; }
-
-.ai-badge {
-  position: absolute;
-  top: -10rpx;
-  right: -10rpx;
-  background: #000;
-  color: #fff;
-  font-size: 18rpx;
-  padding: 4rpx 12rpx;
-  border-radius: 16rpx;
-  font-weight: bold;
-  border: 4rpx solid #fff;
-}
-
 .med-time-tabs {
   display: flex;
   gap: 12rpx;
-  margin-bottom: 24rpx;
+  margin-bottom: $spacing-base;
 }
 .time-tab {
   flex: 1;
@@ -595,11 +230,9 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
   border-radius: 999rpx;
   background: #fff;
   border: 2rpx solid #eee;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @include flex-center;
   color: $text-main;
-  font-size: 26rpx;
+  font-size: $font-size-sm;
 }
 .time-tab.active {
   background: $primary-light;
@@ -612,149 +245,46 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
 .med-list {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: $spacing-base;
 }
 
-.med-card {
-  background: $bg-card;
-  padding: 32rpx;
-  border-radius: 28rpx;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 6rpx 24rpx rgba(0,0,0,0.03);
-  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
-  border: 2rpx solid rgba(0,0,0,0.04);
-  position: relative;
-}
-
-.med-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 8rpx;
-  border-top-left-radius: 28rpx;
-  border-bottom-left-radius: 28rpx;
-  background: var(--accent-color, #0a84ff);
-}
-
-.med-card.checked {
-  background: #F5F6F8;
-  border-color: #E5E6EA;
-  transform: translateY(-2rpx);
-  --accent-color: #E5E5EA;
-}
-
-.med-card.checked .med-name,
-.med-card.checked .med-desc {
-  color: #9A9AA1;
-}
-
-.med-left {
-  display: flex;
-  gap: 28rpx;
-  align-items: center;
-}
-
-.med-icon-bg {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 22rpx;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: inset 0 0 0 2rpx rgba(0,0,0,0.03);
-  background: var(--icon-bg, $primary-light);
-}
-
-.med-icon {
-  width: 36rpx;
-  height: 36rpx;
-}
-.icon-bg-med {
-    background-color: $primary-color;
-    mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PHBhdGggZD0iTTEwLjUgMjAuNWwxMC0xMGE0Ljk1IDQuOTUgMCAxIDAtNy03bC0xMCAxMGE0Ljk1IDQuOTUgMCAxIDAgNyA3eiIvPjxwYXRoIGQ9Ik04LjUgOC41bDcgNyIvPjwvc3ZnPg==");
-    -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PHBhdGggZD0iTTEwLjUgMjAuNWwxMC0xMGE0Ljk1IDQuOTUgMCAxIDAtNy03bC0xMCAxMGE0Ljk1IDQuOTUgMCAxIDAgNyA3eiIvPjxwYXRoIGQ9Ik04LjUgOC41bDcgNyIvPjwvc3ZnPg==");
-    mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center;
-}
-
-
-.med-info {
+.empty-state {
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
+  align-items: center;
+  padding: 60rpx 0;
+  gap: $spacing-sm;
 }
 
-.med-name {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: $text-main;
+.empty-icon {
+  width: 120rpx;
+  height: 120rpx;
+  background-color: #ddd;
+}
+.icon-bg-empty {
+  background-color: #ccc;
+  mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjxsaW5lIHgxPSIxMiIgeTE9IjgiIHgyPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjEyIiB5MT0iMTYiIHgyPSIxMi4wMSIgeTI9IjE2Ii8+PC9zdmc+");
+  -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjxsaW5lIHgxPSIxMiIgeTE9IjgiIHgyPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjEyIiB5MT0iMTYiIHgyPSIxMi4wMSIgeTI9IjE2Ii8+PC9zdmc+");
+  mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center;
 }
 
-.med-desc {
-  font-size: 24rpx;
+.empty-text {
+  font-size: $font-size-sm;
   color: $text-sub;
 }
 
-.med-card.checked .med-icon-bg { --icon-bg: #F0F0F3; }
-.med-card.checked .icon-bg-med { background-color: #B0B0B5; }
-
-.check-btn {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 50%;
-  border: 4rpx solid #eee;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #fff;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
-}
-
-.med-card.checked .check-btn {
-  background: $success-color;
-  border-color: $success-color;
-  transform: scale(1.05);
-}
-
-.check-icon {
-  width: 32rpx;
-  height: 32rpx;
-}
-.icon-bg-check {
-    background-color: #fff;
-    mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMyI+PHBvbHlsaW5lIHBvaW50cz0iMjAgNiA5IDE3IDQgMTIiLz48L3N2Zz4=");
-    -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMyI+PHBvbHlsaW5lIHBvaW50cz0iMjAgNiA5IDE3IDQgMTIiLz48L3N2Zz4=");
-    mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center;
-}
-
-.check-icon-placeholder {
-    width: 32rpx;
-    height: 32rpx;
-    opacity: 0;
-}
-.icon-bg-check-gray {
-    background-color: #ddd;
-    mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PHBvbHlsaW5lIHBvaW50cz0iMjAgNiA5IDE3IDQgMTIiIG9wYWNpdHk9IjAiLz48L3N2Zz4=");
-    -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiI+PHBvbHlsaW5lIHBvaW50cz0iMjAgNiA5IDE3IDQgMTIiIG9wYWNpdHk9IjAiLz48L3N2Zz4=");
-    mask-size: contain; -webkit-mask-size: contain; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center;
+.add-btn-small {
+  margin-top: $spacing-xs;
+  padding: 12rpx 32rpx;
+  background: $primary-light;
+  color: $primary-color;
+  font-size: $font-size-sm;
+  border-radius: 999rpx;
+  font-weight: 600;
 }
 
 .safe-area-spacer {
   height: 180rpx; 
   padding-bottom: env(safe-area-inset-bottom);
 }
-
-/* 时段配色 */
-.slot-morning { --accent-color: #FFCC00; }
-.slot-noon { --accent-color: #0A84FF; }
-.slot-evening { --accent-color: #AF52DE; }
-.slot-morning::before { background: #FFCC00; }
-.slot-noon::before { background: #0A84FF; }
-.slot-evening::before { background: #AF52DE; }
-.slot-morning .med-icon-bg { --icon-bg: #FFF5CC; }
-.slot-noon .med-icon-bg { --icon-bg: #E6F2FF; }
-.slot-evening .med-icon-bg { --icon-bg: #F3E8FF; }
 </style>

@@ -88,6 +88,7 @@
 <script setup>
 import { ref } from 'vue'
 import TopSafeArea from '@/components/TopSafeArea.vue'
+import { performOCR, analyzeImageContent } from '@/services/deepseek.js'
 
 const form = ref({ date: '', hospital: '', department: '', doctor: '', complaint: '', history: '', diagnosis: '' })
 const images = ref([])
@@ -99,33 +100,67 @@ const saving = ref(false)
 const onDateChange = (e) => { form.value.date = e.detail.value }
 
 const chooseImages = () => {
-  uni.chooseImage({ count: 9, sizeType: ['compressed'], sourceType: ['camera','album'], success: (res) => { images.value = images.value.concat(res.tempFilePaths) } })
+  uni.chooseImage({ count: 9, sizeType: ['original', 'compressed'], sourceType: ['camera','album'], success: (res) => { images.value = images.value.concat(res.tempFilePaths) } })
 }
 
 const preview = (idx) => { uni.previewImage({ current: images.value[idx], urls: images.value }) }
 
-const runOCR = () => {
+const runOCR = async () => {
   if (images.value.length === 0) return
   ocrLoading.value = true
-  setTimeout(() => {
-    form.value.complaint = form.value.complaint || '咳嗽伴咽痛 3 天'
-    form.value.history = form.value.history || '发热 38.3℃，自行口服对乙酰氨基酚'
-    form.value.diagnosis = form.value.diagnosis || '急性上呼吸道感染'
+  try {
+    const text = await performOCR(images.value[0])
+    if (!text || text.trim().length === 0) {
+      throw new Error('无法识别图片内容')
+    }
+    
+    const result = await analyzeImageContent(text, 'record_extraction')
+    if (result) {
+      form.value.complaint = result.complaint || form.value.complaint
+      form.value.history = result.history || form.value.history
+      form.value.diagnosis = result.diagnosis || form.value.diagnosis
+      form.value.hospital = result.hospital || form.value.hospital
+      form.value.department = result.department || form.value.department
+      form.value.doctor = result.doctor || form.value.doctor
+      if (result.date) form.value.date = result.date
+      
+      uni.showToast({ title: '已提取', icon: 'success' })
+    }
+  } catch (e) {
+    console.error(e)
+    uni.showToast({ title: '识别失败，请重试', icon: 'none' })
+  } finally {
     ocrLoading.value = false
-    uni.showToast({ title: '已提取', icon: 'none' })
-  }, 1200)
+  }
 }
 
-const generateAI = () => {
+const generateAI = async () => {
   aiLoading.value = true
   aiOutput.value = ''
-  const segments = ['症状与体征提示为上呼吸道炎症。', '建议充足休息与补水，避免刺激性食物。', '若持续高热或呼吸困难，应及时就医复查。']
-  let i = 0
-  const timer = setInterval(() => {
-    aiOutput.value += (i>0 ? '\n' : '') + segments[i]
-    i++
-    if (i >= segments.length) { clearInterval(timer); aiLoading.value = false }
-  }, 600)
+  
+  const content = `主诉：${form.value.complaint || '未填写'}\n现病史：${form.value.history || '未填写'}\n诊断：${form.value.diagnosis || '未填写'}`
+  
+  try {
+    const advice = await analyzeImageContent(content, 'record_advice')
+    if (advice) {
+      // Stream effect simulation for better UX
+      let i = 0
+      const timer = setInterval(() => {
+        aiOutput.value += advice[i]
+        i++
+        if (i >= advice.length) {
+          clearInterval(timer)
+          aiLoading.value = false
+        }
+      }, 30)
+    } else {
+      aiLoading.value = false
+    }
+  } catch (e) {
+    console.error(e)
+    aiOutput.value = 'AI 解读生成失败，请稍后重试。'
+    aiLoading.value = false
+  }
 }
 
 const saveRecord = () => {

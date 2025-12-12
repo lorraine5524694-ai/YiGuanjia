@@ -13,24 +13,24 @@
       <view class="expense-card">
         <view class="expense-header">
           <text class="card-title">本年度医疗支出</text>
-          <view class="year-select">
-            <text>2023年</text>
+          <view class="year-select" @click="showYearPicker">
+            <text>{{ currentYear }}年</text>
             <view class="arrow-down-white"></view>
           </view>
         </view>
         <view class="expense-total">
           <text class="currency">¥</text>
-          <text class="amount">12,450.00</text>
+          <text class="amount">{{ currentData.total }}</text>
         </view>
         <view class="expense-detail">
           <view class="detail-item">
             <text class="label">医保支付</text>
-            <text class="val">¥ 8,200.00</text>
+            <text class="val">¥ {{ currentData.insurance }}</text>
           </view>
           <view class="detail-divider"></view>
           <view class="detail-item">
             <text class="label">自费支出</text>
-            <text class="val">¥ 4,250.00</text>
+            <text class="val">¥ {{ currentData.self }}</text>
           </view>
         </view>
       </view>
@@ -75,20 +75,13 @@
           </view>
           <!-- 模拟折线点和连线 (仅示意) -->
           <view class="chart-points">
-            <view class="point" style="left: 10%; bottom: 40%;">
-              <view class="tooltip">6.1</view>
-            </view>
-            <view class="point" style="left: 30%; bottom: 45%;">
-              <view class="tooltip">6.3</view>
-            </view>
-            <view class="point" style="left: 50%; bottom: 35%;">
-              <view class="tooltip">5.8</view>
-            </view>
-            <view class="point" style="left: 70%; bottom: 55%;">
-              <view class="tooltip warning">7.1</view>
-            </view>
-            <view class="point" style="left: 90%; bottom: 42%;">
-              <view class="tooltip">6.2</view>
+            <view 
+              v-for="(val, idx) in trendData" 
+              :key="idx"
+              class="point" 
+              :style="{ left: (idx * 20 + 10) + '%', bottom: (val / 10 * 100 - 20) + '%' }"
+            >
+              <view class="tooltip" :class="{ warning: val > 7.0 }">{{ val }}</view>
             </view>
           </view>
           <view class="x-axis">
@@ -111,16 +104,65 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import CustomTabBar from '@/components/CustomTabBar.vue';
 import TopSafeArea from '@/components/TopSafeArea.vue';
 
-const expenses = ref([
-  { name: '药品费', percent: 45, amount: '5,602', color: '#007AFF' },
-  { name: '检查费', percent: 30, amount: '3,735', color: '#30D158' },
-  { name: '治疗费', percent: 15, amount: '1,867', color: '#FF9500' },
-  { name: '挂号费', percent: 10, amount: '1,245', color: '#AF52DE' }
-]);
+const currentYear = ref(2025);
+const years = [2025, 2024, 2023];
+
+const allData = {
+  2025: {
+    total: '12,450.00',
+    insurance: '8,200.00',
+    self: '4,250.00',
+    expenses: [
+      { name: '药品费', percent: 45, amount: '5,602', color: '#007AFF' },
+      { name: '检查费', percent: 30, amount: '3,735', color: '#30D158' },
+      { name: '治疗费', percent: 15, amount: '1,867', color: '#FF9500' },
+      { name: '挂号费', percent: 10, amount: '1,245', color: '#AF52DE' }
+    ],
+    trend: [6.1, 6.3, 5.8, 7.1, 6.2]
+  },
+  2024: {
+    total: '8,320.00',
+    insurance: '5,000.00',
+    self: '3,320.00',
+    expenses: [
+      { name: '药品费', percent: 50, amount: '4,160', color: '#007AFF' },
+      { name: '检查费', percent: 20, amount: '1,664', color: '#30D158' },
+      { name: '治疗费', percent: 20, amount: '1,664', color: '#FF9500' },
+      { name: '挂号费', percent: 10, amount: '832', color: '#AF52DE' }
+    ],
+    trend: [5.9, 6.0, 5.7, 6.5, 6.0]
+  },
+  2023: {
+    total: '5,100.00',
+    insurance: '3,000.00',
+    self: '2,100.00',
+    expenses: [
+      { name: '药品费', percent: 60, amount: '3,060', color: '#007AFF' },
+      { name: '检查费', percent: 10, amount: '510', color: '#30D158' },
+      { name: '治疗费', percent: 20, amount: '1,020', color: '#FF9500' },
+      { name: '挂号费', percent: 10, amount: '510', color: '#AF52DE' }
+    ],
+    trend: [5.8, 5.9, 5.6, 6.0, 5.9]
+  }
+};
+
+const currentData = computed(() => allData[currentYear.value] || allData[2025]);
+
+const expenses = computed(() => currentData.value.expenses);
+const trendData = computed(() => currentData.value.trend);
+
+const showYearPicker = () => {
+  uni.showActionSheet({
+    itemList: years.map(y => y + '年'),
+    success: (res) => {
+      currentYear.value = years[res.tapIndex];
+    }
+  });
+};
 
 const showToast = (msg) => {
   uni.showToast({ title: msg, icon: 'none' });

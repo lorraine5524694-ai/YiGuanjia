@@ -44,7 +44,10 @@
           <view class="ai-badge">AI</view>
         </view>
         <view class="ai-disclaimer">AI 内容仅供参考，请遵循医嘱</view>
-        <view class="ai-output">{{ record.aiSummary || '暂无 AI 内容' }}</view>
+        <view class="ai-output" v-if="record.aiSummary">{{ record.aiSummary }}</view>
+        <view class="btn-row" v-else>
+           <button class="btn-primary" :disabled="aiLoading" @click="generateAI">{{ aiLoading ? '生成中...' : '生成 AI 解读' }}</button>
+        </view>
       </view>
 
       <view class="safe-area-spacer"></view>
@@ -63,10 +66,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import TopSafeArea from '@/components/TopSafeArea.vue'
+import { analyzeImageContent } from '@/services/deepseek.js'
 
 const record = ref({ day: '', year: '', hospital: '', diagnosis: '', doctor: '', images: [], detail: {} })
 const needAuth = ref(true)
 const authed = ref(false)
+const aiLoading = ref(false)
 
 onMounted(() => {
   const list = uni.getStorageSync('filesRecords') || []
@@ -77,6 +82,43 @@ onMounted(() => {
 const confirmAuth = () => { authed.value = true }
 const edit = () => { uni.navigateTo({ url: '/pages/files/edit?index=0' }) }
 const preview = (idx) => { uni.previewImage({ current: record.value.images[idx], urls: record.value.images }) }
+
+const generateAI = async () => {
+  aiLoading.value = true
+  const content = `主诉：${record.value.detail?.complaint || '未填写'}\n现病史：${record.value.detail?.history || '未填写'}\n诊断：${record.value.detail?.diagnosis || record.value.diagnosis || '未填写'}`
+  
+  try {
+    const advice = await analyzeImageContent(content, 'record_advice')
+    if (advice) {
+      record.value.aiSummary = ''
+      // Stream effect simulation
+      let i = 0
+      const timer = setInterval(() => {
+        record.value.aiSummary += advice[i]
+        i++
+        if (i >= advice.length) {
+          clearInterval(timer)
+          aiLoading.value = false
+          saveRecordUpdate()
+        }
+      }, 30)
+    } else {
+      aiLoading.value = false
+    }
+  } catch (e) {
+    console.error(e)
+    uni.showToast({ title: '生成失败', icon: 'none' })
+    aiLoading.value = false
+  }
+}
+
+const saveRecordUpdate = () => {
+  const list = uni.getStorageSync('filesRecords') || []
+  if (list.length > 0) {
+    list[0] = record.value
+    uni.setStorageSync('filesRecords', list)
+  }
+}
 </script>
 
 <style lang="scss">
@@ -100,6 +142,7 @@ const preview = (idx) => { uni.previewImage({ current: record.value.images[idx],
 .ai-badge { background: linear-gradient(90deg,#007AFF,#00C6FF); color: #fff; border-radius: 12rpx; padding: 6rpx 12rpx; font-size: 20rpx; }
 .ai-disclaimer { background: #F2F2F7; color: $text-sub; font-size: 22rpx; padding: 12rpx 16rpx; border-radius: 12rpx; margin-bottom: 16rpx; }
 .ai-output { white-space: pre-wrap; font-size: 28rpx; color: $text-main; line-height: 1.6; }
+.btn-row { display: flex; justify-content: flex-end; gap: 16rpx; margin-top: 20rpx; }
 .safe-area-spacer { height: 180rpx; padding-bottom: env(safe-area-inset-bottom); }
 .auth-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; justify-content: center; align-items: center; z-index: 9999; }
 .auth-card { width: 600rpx; background: #fff; border-radius: 24rpx; padding: 32rpx; display: flex; flex-direction: column; gap: 20rpx; align-items: center; }
