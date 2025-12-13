@@ -1,6 +1,6 @@
 
 
-const API_KEY = 'sk-e12c87d92a044427b5b7bdce590684f8'; // Replace with actual key or use environment variable
+const API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY || 'sk-e12c87d92a044427b5b7bdce590684f8';
 const BASE_URL = '/deepseek/chat/completions';
 
 import { createWorker } from 'tesseract.js';
